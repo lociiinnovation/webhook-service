@@ -1,5 +1,5 @@
 import { ConnectionInfo, PaginationResult } from "@locii/truuth-db";
-import { WebhookSubscription } from "../models/webhook";
+import { WebhookSubscription, WebhookType } from "../models/webhook";
 
 export interface IWebhookSubscriptionRepository {
     listWebhookSubscriptions(query: any, page: number, limit: number, sort: any, projection?: any): Promise<PaginationResult<WebhookSubscription[]>>;
@@ -7,5 +7,6 @@ export interface IWebhookSubscriptionRepository {
     getConnectionInfo(): Promise<ConnectionInfo>;
     saveWebhook(request: WebhookSubscription): Promise<WebhookSubscription>;
     deleteWebhook(webhookSubscriptionId: string): Promise<void>;
-    updateWebhook(WebhookSubscriptionId: string, request: WebhookSubscription): Promise<WebhookSubscription>
+    updateWebhook(WebhookSubscriptionId: string, request: WebhookSubscription): Promise<WebhookSubscription>;
+    getWebhookTypes(): Promise<WebhookType[]>;
 }

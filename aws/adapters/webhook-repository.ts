@@ -1,8 +1,9 @@
 import { TenantRepository, ConnectionInfo, CustomIdOptions, PaginationResult } from "@locii/truuth-db";
-import { WebhookSubscription } from "../../core/models/webhook";
+import { WebhookSubscription, WebhookType } from "../../core/models/webhook";
 import { IWebhookSubscriptionRepository } from "../../core/ports/webhook-subscription-repository";
 import { ConfigSettings } from './config-settings';
 import { Errors } from "@locii/truuth-lib";
+import { WEBHOOK_TYPES } from "../../core/lib/common";
 
 export class WebhookEventsRepository extends TenantRepository implements IWebhookSubscriptionRepository {
 
@@ -47,5 +48,9 @@ export class WebhookEventsRepository extends TenantRepository implements IWebhoo
 
     async deleteWebhook(subscriptionId: string): Promise<void> {
         await this.delete({ subscriptionId });
+    }
+
+    async getWebhookTypes(): Promise<WebhookType[]> {
+        return WEBHOOK_TYPES;
     }
 }

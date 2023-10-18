@@ -10,6 +10,11 @@ export enum AUTHENTICATION_TYPE {
   BEARER = 'BEARER'
 }
 
+export class WebhookType {
+  name: string;
+  code: string;
+}
+
 export class WebhookSubscription {
 
   subscriptionId?: string;
