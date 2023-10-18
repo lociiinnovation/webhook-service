@@ -9,7 +9,6 @@ export const handler: SQSHandler = Middleware.wrap(async (event) => {
     logger.debug("SQS event", event);
     const ctx = Context.getCurrentValue();
     const message = JSON.parse(event.Records[0].body);
-    console.log(message.detail.body);
     const request = await Validator.transformAndValidate<WebhookEvent>(WebhookEvent, JSON.stringify(message.detail.body));
 
     const factory = new ServiceFactory(ctx.identity.tenant);

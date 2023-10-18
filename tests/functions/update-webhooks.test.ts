@@ -99,7 +99,6 @@ describe('Get Verification event', () => {
 
   it('Should Update the specific subscription successfully', async () => {
     const events = eventSaved.find(e => e.webhookType === WEBHOOK_TYPE.CALLBACK);
-    console.log(events);
     const event: any = {
       ...baseEvent,
       pathParameters: { subscriptionId: events.subscriptionId, tenantAlias: 'client' }

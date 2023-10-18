@@ -15,7 +15,6 @@ export class WebhookEventsRepository extends TenantRepository implements IWebhoo
     }
 
     async listWebhookSubscriptions(query: any, page: number, limit: number, sort: any, projection?: any): Promise<PaginationResult<WebhookSubscription[]>> {
-        console.log(query);
         return this.findWithPagination(query, page, limit, sort, projection);
     }
 
@@ -43,7 +42,6 @@ export class WebhookEventsRepository extends TenantRepository implements IWebhoo
         if (!lastErrorObject.updatedExisting) {
             throw new Errors.NotFoundError("Webhook subscription does not exist");
         }
-        console.log("Found object:", subscriptionId, value);
         return value;
     }
 
