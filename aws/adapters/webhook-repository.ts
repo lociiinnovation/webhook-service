@@ -53,4 +53,16 @@ export class WebhookEventsRepository extends TenantRepository implements IWebhoo
     async getWebhookTypes(): Promise<WebhookType[]> {
         return WEBHOOK_TYPES;
     }
+
+    async getWebhookTypesByTenantAlias(): Promise<string[]> {
+        const webhhooks: WebhookSubscription[] = await this.find({});
+
+        const distinctWebhook = webhhooks.filter(
+            (thing, i, arr) => arr.findIndex(t => t.webhookType === thing.webhookType) === i
+        );
+
+        const webhookTypes = distinctWebhook.map(val => (val.webhookType));
+        console.log(webhookTypes);
+        return webhookTypes;
+    }
 }

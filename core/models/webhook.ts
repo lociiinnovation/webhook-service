@@ -1,8 +1,8 @@
 import { IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
 
 export enum WEBHOOK_TYPE {
-  CALLBACK = 'Callback',
-  BIOPASS_USER_PROVISIONING = 'Biopass User Provisioning'
+  CALLBACK = 'CALLBACK',
+  BIOPASS_USER_PROVISIONING = 'BIOPASS_USER_PROVISIONING'
 }
 
 export enum AUTHENTICATION_TYPE {

@@ -9,4 +9,5 @@ export interface IWebhookSubscriptionRepository {
     deleteWebhook(webhookSubscriptionId: string): Promise<void>;
     updateWebhook(WebhookSubscriptionId: string, request: WebhookSubscription): Promise<WebhookSubscription>;
     getWebhookTypes(): Promise<WebhookType[]>;
+    getWebhookTypesByTenantAlias(): Promise<string[]>;
 }

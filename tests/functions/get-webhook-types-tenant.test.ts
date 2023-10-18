@@ -1,4 +1,4 @@
-import { handler } from '../../aws/functions/http/list-webhooks';
+import { handler } from '../../aws/functions/http/get-tenant-webhook-types';
 import baseEvent from '../events/get-webhook-event.json';
 import { WebhookSubscription, WEBHOOK_TYPE, AUTHENTICATION_TYPE } from '../../core/models/webhook';
 import { WebhookEventsRepository } from '../../aws/adapters/webhook-repository';
@@ -81,46 +81,25 @@ describe('List webhook subscriptions', () => {
 
   afterAll(async () => {
     spyContext.mockRestore();
+  });
+
+  afterEach(async () => {
     const connection = await MongoClient.connect(process.env.MONGO_URL);
     const db = connection.db();
     await db.collection('webhooks').deleteMany({});
     await connection.close();
   });
 
-  it('Should get all the events for the specific verification successfully', async () => {
+  it('Should get distinct webhook types by tenant', async () => {
     const event: any = {
       ...baseEvent,
-      pathParameters: { verificationId: 'ad712hbdi89b1d89', tenantAlias: 'client' }
+      pathParameters: { tenantAlias: 'client' }
     };
 
     const response = await handler(event, context, null);
     const body = JSON.parse(response['body']);
     expect(response['statusCode']).toBe(200);
-    expect(body.items.length).toBeGreaterThan(1);
-  });
-
-  it('Should get all the webhook subscrtiptions successfully', async () => {
-    const event: any = {
-      ...baseEvent
-    };
-
-    const response = await handler(event, context, null);
-    const body = JSON.parse(response['body']);
-    expect(response['statusCode']).toBe(200);
-    expect(body.items.length).toBeGreaterThan(1);
-  });
-
-  it('Should return empty items', async () => {
-    const event: any = {
-      ...baseEvent,
-      pathParameters: {tenantAlias: 'client' },
-      queryStringParameters: {
-        'webhooktype': WEBHOOK_TYPE.BIOPASS_USER_PROVISIONING
-      }
-    };
-
-    const response = await handler(event, context, null);
-    expect(response['statusCode']).toBe(200);
+    expect(body.length).toBeGreaterThan(1);
   });
 
 });
