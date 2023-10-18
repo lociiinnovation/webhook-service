@@ -1,0 +1,368 @@
+app: ${opt:app, 'truuth'}
+service: ${self:app}-webhook-srv
+frameworkVersion: '3'
+configValidationMode: warn
+
+# only use this for variables that are used by the serverless framework and not by the functions
+custom:
+  org: locii
+  stage: ${opt:stage, 'dev'}
+  country: ${param:country, 'au'}
+  region: ${opt:region, 'ap-southeast-2'}
+  accountId: ${param:account, '566318860935'}
+  rootDomain: ${param:rootDomain, 'truuth.id'}
+  eventBusName: ${self:app}-event-bus-${self:custom.stage}
+
+  associateWaf:
+      name: truuth-${self:custom.stage}
+      version: V2 #(optional) Regional | V2
+
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+
+  prune:
+    automatic: true
+    number: 3
+
+  logLevels:
+    dev: debug
+    test: debug
+    demo: info
+    sb: info
+    prod: info
+
+  domains:
+    prod: private.api.${self:custom.country}.${self:custom.rootDomain}
+    dev: private.api.${self:custom.country}.${self:custom.stage}.${self:custom.rootDomain}
+    test: private.api.${self:custom.country}.${self:custom.stage}.${self:custom.rootDomain}
+    demo: private.api.${self:custom.country}.${self:custom.stage}.${self:custom.rootDomain}
+    sb: private.api.${self:custom.country}.${self:custom.stage}.${self:custom.rootDomain}
+
+  customDomain:
+    domainName: ${self:custom.domains.${self:custom.stage}}
+    basePath: verification-event
+    stage: ${self:custom.stage}
+    createRoute53Record: true
+
+  authorizer:
+    arn: arn:aws:lambda:${self:custom.region}:${self:custom.accountId}:function:truuth-custom-authorizer-${self:custom.stage}-v2
+    resultTtlInSeconds: 3600
+    identitySource: method.request.header.Authorization
+    identityValidationExpression: ".*"
+
+  deadletterQueueArn: arn:aws:sqs:${self:custom.region}:${self:custom.accountId}:${self:app}-error-srv-dlq-queue-${self:custom.stage}
+
+  allowed-headers:
+    - Content-Type
+    - X-Amz-Date
+    - Authorization
+    - X-Api-Key
+    - X-Amz-Security-Token
+    - X-Amz-User-Agent
+
+  alerts:
+    stages:
+      - dev
+      - test
+      - demo
+      - sb
+      - prod
+    topics:
+      alarm:
+        topic: arn:aws:sns:${self:custom.region}:${self:custom.accountId}:email-alarms-${self:custom.stage}
+    definitions:
+      customLoggerErrors:
+        metric: customLoggerErrors
+        threshold: 1
+        statistic: Sum
+        period: 300
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: '{$.level = "error"}'
+    alarms:
+      - functionErrors
+      - customLoggerErrors
+
+  # Warmup every 5 minutes
+  warmup:
+    default:
+      enabled: true
+      prewarm: true
+      events:
+        - schedule: cron(0/5 * ? * MON-SUN *)
+      concurrency: 2
+      package:
+        individually: true
+        patterns:
+          - '!**'
+          - .warmup/**
+
+  # Datadog Config
+  datadog:
+    service: ${self:service}
+    apiKeySecretArn: ${ssm:/${self:app}/${self:custom.country}/${self:custom.stage}/datadog/api-key-secret-arn}
+    site: ${ssm:/${self:app}/${self:custom.country}/${self:custom.stage}/datadog/site}
+    env: ${self:custom.country}-${self:custom.stage}
+    enableDDTracing: true
+    enableDDLogs: true
+    captureLambdaPayload: true
+    version: ${param:version, '0.0.0'}
+    enableXrayTracing: true
+    enableTags: false
+    exclude:
+      - warmUpPluginDefault
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - serverless-plugin-datadog
+  - serverless-prune-plugin
+  - serverless-domain-manager
+  - serverless-plugin-warmup
+  - serverless-associate-waf
+
+# AWS Configuration
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: ${self:custom.stage}
+  region: ${self:custom.region}
+  timeout: 30
+  logRetentionInDays: 90
+  tracing:
+    apiGateway: true
+    lambda: true
+  deploymentBucket:
+    name: temp.${self:custom.country}.${self:custom.stage}.${self:custom.rootDomain}
+    serverSideEncryption: AES256
+
+  vpc:
+    securityGroupIds:
+      - !GetAtt securityGroup.GroupId
+    subnetIds:
+      - ${ssm:/${self:app}/${self:custom.country}/${self:custom.stage}/vpc/appsubnet1}
+      - ${ssm:/${self:app}/${self:custom.country}/${self:custom.stage}/vpc/appsubnet2}
+      - ${ssm:/${self:app}/${self:custom.country}/${self:custom.stage}/vpc/appsubnet3}
+
+  apiGateway:
+    minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
+    apiKeySourceType: AUTHORIZER
+    shouldStartNameWithService: true
+
+  # variables that are globally used by all functions go here
+  environment:
+    APP: ${self:app}
+    STAGE: ${self:custom.stage}
+    COUNTRY: ${self:custom.country}
+    SERVICE: ${self:service}
+    REGION: ${self:provider.region}
+    TRUUTH_LOG_LEVEL: ${self:custom.logLevels.${self:custom.stage}}
+    API_BASE_URL: https://${self:custom.domains.${self:custom.stage}}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - "ssm:GetParameters"
+            - "ssm:GetParameter"
+            - "ssm:GetParametersByPath"
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource: "*"
+
+  stackTags:
+    service: ${self:service}
+    app: ${self:app}
+    env: ${self:custom.country}-${self:custom.stage}
+
+package:
+  individually: false
+  patterns:
+    - '!package.json'
+    - '!package-lock.json'
+    - '!resources/**'
+    - '!tests/**'
+    - '!vscode/**'
+    - '!.serverless/**'
+    - '!temp/**'
+    - '!layers/**'
+
+functions:
+  send-events:
+    name: ${self:service}-send-events-${self:custom.stage}-v1
+    handler: aws/functions/sqs/send-events.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [WebhookSendEventQueue, Arn]
+          batchSize: 1
+    timeout: 30
+    memorySize: 1600
+  save-webhooks:
+    name: ${self:service}-save-webhooks-${self:custom.stage}-v1
+    handler: aws/functions/http/save-webhooks.handler
+    events:
+      - http:
+          method: post
+          path: /web/v1/tenants/{alias}/webhook/subscriptions
+          request:
+            parameters:
+              paths:
+                alias: true
+                verificationId: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
+  update-webhooks:
+    name: ${self:service}-update-webhooks-${self:custom.stage}-v1
+    handler: aws/functions/http/update-webhooks.handler
+    events:
+      - http:
+          method: put
+          path: /web/v1/tenants/{alias}/webhook/subscriptions/{subscriptionId}
+          request:
+            parameters:
+              paths:
+                alias: true
+                subscriptionId: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
+  delete-webhooks:
+    name: ${self:service}-delete-webhooks-${self:custom.stage}-v1
+    handler: aws/functions/http/delete-webhooks.handler
+    events:
+      - http:
+          method: delete
+          path: /web/v1/tenants/{alias}/webhook/subscriptions/{subscriptionId}
+          request:
+            parameters:
+              paths:
+                alias: true
+                subscriptionId: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
+  list-webhooks:
+    name: ${self:service}-list-webhooks-${self:custom.stage}-v1
+    handler: aws/functions/http/list-webhooks.handler
+    events:
+      - http:
+          method: get
+          path: /web/v1/tenants/{alias}/webhook/subscriptions
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
+      - http:
+          method: get
+          path: v1//web/v1/tenants/{alias}/webhook/subscriptions
+          request:
+            parameters:
+              paths:
+                alias: true
+                verificationId: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
+resources:
+  Resources:
+    securityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: ${self:service}-${self:custom.country}-${self:custom.stage}-sg
+        GroupDescription: ${self:service}-${self:custom.country}-${self:custom.stage} security group
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            FromPort: 0
+            ToPort: 0
+            CidrIp: 0.0.0.0/0
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            CidrIp: 0.0.0.0/0
+        VpcId: ${ssm:/${self:app}/${self:custom.country}/${self:custom.stage}/vpc/vpcid}
+    
+    WebhookSendEventQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-webhook-send-event-queue-${self:custom.stage}
+        VisibilityTimeout: 30
+        RedrivePolicy:
+          deadLetterTargetArn: ${self:custom.deadletterQueueArn}
+          maxReceiveCount: 3
+
+    WebhookSendEventQueueRule:
+      Type: AWS::Events::Rule
+      Properties:
+        Description: Webhook Send Event Request Rule
+        Name: webhook-send-event-rule-${self:custom.stage}
+        EventBusName: ${self:custom.eventBusName}
+        EventPattern:
+          detail-type:
+            - Webhook - Send Events
+        State: ENABLED
+        Targets:
+          - Arn:
+              Fn::GetAtt: [WebhookSendEventQueue, Arn]
+            Id:
+              Fn::GetAtt: [WebhookSendEventQueue, QueueName]
+
+    WebhookSendEventSQSPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref WebhookSendEventQueue
+        PolicyDocument:
+          Statement:
+            - Action:
+                - SQS:SendMessage
+              Effect: Allow
+              Resource: !GetAtt WebhookSendEventQueue.Arn
+              Principal:
+                Service:
+                  - events.amazonaws.com
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !GetAtt WebhookSendEventQueueRule.Arn
+
+    GatewayResponseDefault4XX:
+      Type: "AWS::ApiGateway::GatewayResponse"
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
