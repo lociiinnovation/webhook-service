@@ -18,8 +18,8 @@ export class WebhookEventsRepository extends TenantRepository implements IWebhoo
         return this.findWithPagination(query, page, limit, sort, projection);
     }
 
-    async getWebhookSubscription(webhookType: string, projection?: any): Promise<WebhookSubscription> {
-        return this.findOne({ webhookType }, projection);
+    async getWebhookSubscriptions(webhookType: string, projection?: any): Promise<WebhookSubscription[]> {
+        return this.find({ webhookType }, projection);
     }
 
     async getConnectionInfo(): Promise<ConnectionInfo> {
