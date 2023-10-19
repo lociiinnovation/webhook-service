@@ -1,0 +1,66 @@
+{
+  "name": "idv-event-log-srv",
+  "version": "1.0.0",
+  "description": "Identity verification event log service",
+  "scripts": {
+    "package": "serverless package",
+    "deploy": "serverless deploy -s test",
+    "dev": "serverless offline",
+    "test": "jest  --forceExit --detectOpenHandles",
+    "lint": "eslint . --ext .ts"
+  },
+  "dependencies": {
+    "@locii/truuth-aws-lib": "^2.3.4",
+    "@locii/truuth-db": "^4.1.0",
+    "@locii/truuth-lib": "^2.6.1",
+    "@locii/truuth-sdk": "^2.23.2",
+    "axios": "^1.5.1",
+    "class-validator": "^0.14.0",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "@shelf/jest-mongodb": "^4.1.3",
+    "@types/aws-lambda": "^8.10.76",
+    "@types/jest": "^28.1.6",
+    "@types/node": "^10.17.51",
+    "@types/node-fetch": "^2.5.10",
+    "@types/qrcode": "^1.4.0",
+    "@typescript-eslint/eslint-plugin": "^3.7.0",
+    "@typescript-eslint/parser": "^3.7.0",
+    "aws-sdk-mock": "^5.1.0",
+    "eslint": "^7.26.0",
+    "eslint-plugin-jest": "^23.18.0",
+    "fork-ts-checker-webpack-plugin": "^3.0.1",
+    "jest": "^28.1.3",
+    "jest-fetch-mock": "^3.0.3",
+    "mongodb": "^4.11.0",
+    "serverless-associate-waf": "^1.2.1",
+    "serverless-dependson-plugin": "^1.1.2",
+    "serverless-domain-manager": "^6.0.3",
+    "serverless-iam-roles-per-function": "^3.2.0",
+    "serverless-offline": "^12.0.3",
+    "serverless-plugin-custom-roles": "^3.0.0",
+    "serverless-plugin-datadog": "^5.3.0",
+    "serverless-plugin-split-stacks": "^1.11.3",
+    "serverless-plugin-warmup": "^7.1.0",
+    "serverless-prune-plugin": "^2.0.1",
+    "serverless-step-functions": "^3.7.0",
+    "serverless-webpack": "^5.7.1",
+    "ts-jest": "^28.0.7",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.4",
+    "webpack": "^5.42.1",
+    "webpack-node-externals": "^1.7.2"
+  },
+  "author": "Truuth",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lociiinnovation/product-management-service.git"
+  },
+  "license": "ISC",
+  "config": {
+    "mongodbMemoryServer": {
+      "version": "4.4.1"
+    }
+  }
+}
