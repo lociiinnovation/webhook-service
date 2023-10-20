@@ -41,7 +41,7 @@ custom:
 
   customDomain:
     domainName: ${self:custom.domains.${self:custom.stage}}
-    basePath: verification-event
+    basePath: webhook
     stage: ${self:custom.stage}
     createRoute53Record: true
 
@@ -281,7 +281,7 @@ functions:
           authorizer: ${self:custom.authorizer}
       - http:
           method: get
-          path: v1//web/v1/tenants/{alias}/webhook/subscriptions
+          path: v1/tenants/{alias}/webhook/subscriptions
           request:
             parameters:
               paths:
