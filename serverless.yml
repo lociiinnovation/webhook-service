@@ -88,7 +88,7 @@ custom:
   # Warmup every 5 minutes
   warmup:
     default:
-      enabled: true
+      enabled: prod
       prewarm: true
       events:
         - schedule: cron(0/5 * ? * MON-SUN *)
