@@ -215,7 +215,6 @@ functions:
             parameters:
               paths:
                 alias: true
-                verificationId: true
               querystrings:
                 search: false
           cors:
@@ -286,11 +285,46 @@ functions:
             parameters:
               paths:
                 alias: true
-                verificationId: true
               querystrings:
                 search: false
           authorizer:
             type: aws_iam
+  get-tenant-webhook-types:
+    name: ${self:service}-get-tenant-webhook-types-${self:custom.stage}-v1
+    handler: aws/functions/http/get-tenant-webhook-types.handler
+    events:
+      - http:
+          method: get
+          path: /web/v1/tenants/{alias}/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
+  get-webhook-types:
+    name: ${self:service}-get-webhook-types-${self:custom.stage}-v1
+    handler: aws/functions/http/get-webhook-types.handler
+    events:
+      - http:
+          method: get
+          path: /web/v1/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
 resources:
   Resources:
     securityGroup:
