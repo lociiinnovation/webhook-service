@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { WebhookEvent, WebhookSubscription } from '../models/webhook';
+import { WebhookBroadcastEvent, WebhookEvent, WebhookSubscription } from '../models/webhook';
 import { IServiceFactory } from '../ports/service-factory';
 import { logger } from '@locii/truuth-lib';
 
@@ -13,7 +13,11 @@ export class WebhookService {
         const subscriptions = await repository.getWebhookSubscriptions(event.type);
         subscriptions.forEach(async subscription => {
             logger.debug('Publishing event to webhook', { subscription });
-            await eventBus.publishEvent('Webhook - Broadcast Event', { body: subscription });
+            const broadcastEvent: WebhookBroadcastEvent = {
+                payload: event.payload,
+                subscription
+            }
+            await eventBus.publishEvent('Webhook - Broadcast Event', { body: broadcastEvent });
         });
     }
 
