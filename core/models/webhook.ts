@@ -10,6 +10,11 @@ export enum AUTHENTICATION_TYPE {
   BEARER = 'BEARER'
 }
 
+export class WebhookType {
+  name: string;
+  code: string;
+}
+
 export class WebhookSubscription {
 
   subscriptionId?: string;
@@ -37,10 +42,18 @@ export class WebhookSubscription {
 
 export class WebhookEvent {
   @IsNotEmpty({ message: 'webhook type required' })
-  webhookType: string;
+  type: string;
 
-  @IsNotEmpty({ message: 'context is required' })
-  data: any;
+  @IsNotEmpty({ message: 'payload is required' })
+  payload: any;
+}
+
+export class WebhookBroadcastEvent {
+  @IsNotEmpty({ message: 'webhook subscription is required' })
+  subscription: WebhookSubscription;
+
+  @IsNotEmpty({ message: 'payload is required' })
+  payload: any;
 }
 
 export interface BaseResponse {

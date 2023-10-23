@@ -1,10 +1,8 @@
-import { Messaging } from '@locii/truuth-aws-lib';
-import { handler } from '../../aws/functions/sqs/send-events';
+import { handler } from '../../aws/functions/sqs/broadcast-event';
 import { AUTHENTICATION_TYPE, WEBHOOK_TYPE } from '../../core/models/webhook';
 import { Context, ContextData } from '@locii/truuth-lib';
 import { MongoClient } from 'mongodb';
 import fetch from 'node-fetch';
-import { WebhookEventsRepository } from '../../aws/adapters/webhook-repository';
 const { Response } = jest.requireActual('node-fetch');
 jest.mock('node-fetch');
 
@@ -53,35 +51,25 @@ const spyContext = jest.spyOn(Context, 'getCurrentValue').mockReturnValue(contex
 const mockedFetch = fetch as jest.MockedFunction<typeof fetch>;
 mockedFetch.mockReturnValue(Promise.resolve(new Response(JSON.stringify({}))));
 
-describe('Test Sending events', () => {
+describe('Test Broadcasting events', () => {
 
   const message = {
     detail: {
       headers: { "requestor": { "correlationId": "foo", "truuthContext": Buffer.from(JSON.stringify(contextData)), } },
       body: {
-        type: WEBHOOK_TYPE.CALLBACK,
+        subscription: {
+          subscriptionId: "string",
+          webhookType: WEBHOOK_TYPE.CALLBACK,
+          tenantAlias: "string",
+          description: "string",
+          url: "string",
+          authenticationType: AUTHENTICATION_TYPE.BASIC,
+          authToken: "string",
+        },
         payload: { givenName: "Adam", familyName: "Smith" }
       }
     }
   }
-
-  // Mock event bus
-  const mockEventBridge = jest.fn().mockResolvedValue({
-    Entries: [{ EventId: "foo" }],
-  });
-  jest.spyOn(Messaging.MessageQueue.prototype, "retryMessage")
-    .mockImplementation(mockEventBridge);
-  let spyEventBus = jest.spyOn(Messaging.EventBus.prototype, 'publishEvent').mockImplementation(mockEventBridge);
-
-  const webhooksrepo = jest.spyOn(WebhookEventsRepository.prototype, 'getWebhookSubscriptions').mockResolvedValue([{
-    subscriptionId: "string",
-    webhookType: WEBHOOK_TYPE.CALLBACK,
-    tenantAlias: "string",
-    description: "string",
-    url: "string",
-    authenticationType: AUTHENTICATION_TYPE.BASIC,
-    authToken: "string",
-  }])
 
   beforeAll(async () => {
     process.env.APP = 'truuth';
@@ -95,14 +83,12 @@ describe('Test Sending events', () => {
     await db.collection('verification-events').deleteMany({});
     await connection.close();
     spyContext.mockRestore();
-    webhooksrepo.mockRestore();
   });
 
 
-  it('Should send webhook successfully', async () => {
+  it('Should broadcast webhook successfully', async () => {
     const Records = [{ body: JSON.stringify(message) }];
     await handler({ Records: Records } as any, context, null);
-    expect(spyEventBus).toHaveBeenCalled();
   });
 
   it('Should return class validation error', async () => {

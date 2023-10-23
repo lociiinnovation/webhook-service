@@ -204,6 +204,16 @@ functions:
           batchSize: 1
     timeout: 30
     memorySize: 1600
+  broadcast-event:
+    name: ${self:service}-broadcast-event-${self:custom.stage}-v1
+    handler: aws/functions/sqs/broadcast-event.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [WebhookBroadcastEventQueue, Arn]
+          batchSize: 1
+    timeout: 30
+    memorySize: 1600
   save-webhooks:
     name: ${self:service}-save-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/save-webhooks.handler
@@ -451,6 +461,49 @@ resources:
               Condition:
                 ArnEquals:
                   aws:SourceArn: !GetAtt WebhookSendEventQueueRule.Arn
+    
+    WebhookBroadcastEventQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-webhook-broadcast-event-queue-${self:custom.stage}
+        VisibilityTimeout: 30
+        RedrivePolicy:
+          deadLetterTargetArn: ${self:custom.deadletterQueueArn}
+          maxReceiveCount: 3
+
+    WebhookBroadcastEventQueueRule:
+      Type: AWS::Events::Rule
+      Properties:
+        Description: Webhook Broadcast Event Request Rule
+        Name: webhook-broadcast-event-rule-${self:custom.stage}
+        EventBusName: ${self:custom.eventBusName}
+        EventPattern:
+          detail-type:
+            - Webhook - Broadcast Event
+        State: ENABLED
+        Targets:
+          - Arn:
+              Fn::GetAtt: [WebhookSendEventQueue, Arn]
+            Id:
+              Fn::GetAtt: [WebhookSendEventQueue, QueueName]
+
+    WebhookBroadcastEventSQSPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref WebhookBroadcastEventQueue
+        PolicyDocument:
+          Statement:
+            - Action:
+                - SQS:SendMessage
+              Effect: Allow
+              Resource: !GetAtt WebhookBroadcastEventQueue.Arn
+              Principal:
+                Service:
+                  - events.amazonaws.com
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !GetAtt WebhookBroadcastEventQueueRule.Arn
 
     GatewayResponseDefault4XX:
       Type: "AWS::ApiGateway::GatewayResponse"

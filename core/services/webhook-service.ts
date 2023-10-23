@@ -7,16 +7,17 @@ export class WebhookService {
     constructor(private readonly factory: IServiceFactory) {
     }
 
-    async broadcastEvents(event: WebhookEvent): Promise<void> {
+    async publishEvents(event: WebhookEvent): Promise<void> {
         const repository = await this.factory.createWebhookEventRepository();
-
-        const subscriptions = await repository.getWebhookSubscriptions(event.webhookType);
+        const eventBus = await this.factory.createEventBus();
+        const subscriptions = await repository.getWebhookSubscriptions(event.type);
         subscriptions.forEach(async subscription => {
-            await this.publish(event, subscription);
+            logger.debug('Publishing event to webhook', { subscription });
+            await eventBus.publishEvent('Webhook - Broadcast Event', { body: subscription });
         });
     }
 
-    private async publish(data: any, subscription: WebhookSubscription): Promise<void> {
+    async broadcastEvents(payload: any, subscription: WebhookSubscription): Promise<void> {
         try {
             await axios({
                 method: 'POST',
@@ -24,7 +25,7 @@ export class WebhookService {
                 headers: {
                     Authorization: subscription.authToken,
                 },
-                data: data,
+                data: payload,
                 insecureHTTPParser: true,
             });
         } catch (err) {
