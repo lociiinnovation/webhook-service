@@ -222,6 +222,17 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: post
+          path: /v1/tenants/{alias}/webhook/subscriptions
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
   update-webhooks:
     name: ${self:service}-update-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/update-webhooks.handler
@@ -241,6 +252,18 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: put
+          path: /v1/tenants/{alias}/webhook/subscriptions/{subscriptionId}
+          request:
+            parameters:
+              paths:
+                alias: true
+                subscriptionId: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
   delete-webhooks:
     name: ${self:service}-delete-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/delete-webhooks.handler
@@ -260,6 +283,18 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: delete
+          path: /v1/tenants/{alias}/webhook/subscriptions/{subscriptionId}
+          request:
+            parameters:
+              paths:
+                alias: true
+                subscriptionId: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
   list-webhooks:
     name: ${self:service}-list-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/list-webhooks.handler
@@ -307,6 +342,17 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: get
+          path: /v1/tenants/{alias}/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
   get-webhook-types:
     name: ${self:service}-get-webhook-types-${self:custom.stage}-v1
     handler: aws/functions/http/get-webhook-types.handler
@@ -325,6 +371,21 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: get
+          path: /v1/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer:
+            type: aws_iam
 resources:
   Resources:
     securityGroup:
