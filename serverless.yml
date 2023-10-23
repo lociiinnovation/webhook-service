@@ -161,6 +161,7 @@ provider:
     REGION: ${self:provider.region}
     TRUUTH_LOG_LEVEL: ${self:custom.logLevels.${self:custom.stage}}
     API_BASE_URL: https://${self:custom.domains.${self:custom.stage}}
+    EVENT_BUS: ${self:custom.eventBusName}
 
   iam:
     role:
@@ -174,6 +175,15 @@ provider:
         - Effect: Allow
           Action:
             - secretsmanager:GetSecretValue
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - events:PutEvents
+          Resource:
+            - arn:aws:events:${self:custom.region}:${self:custom.accountId}:event-bus/${self:custom.eventBusName}
+        - Effect: Allow
+          Action:
+            - "sqs:*"
           Resource: "*"
 
   stackTags:
@@ -483,9 +493,9 @@ resources:
         State: ENABLED
         Targets:
           - Arn:
-              Fn::GetAtt: [WebhookSendEventQueue, Arn]
+              Fn::GetAtt: [WebhookBroadcastEventQueue, Arn]
             Id:
-              Fn::GetAtt: [WebhookSendEventQueue, QueueName]
+              Fn::GetAtt: [WebhookBroadcastEventQueue, QueueName]
 
     WebhookBroadcastEventSQSPolicy:
       Type: AWS::SQS::QueuePolicy
