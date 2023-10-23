@@ -41,7 +41,7 @@ custom:
 
   customDomain:
     domainName: ${self:custom.domains.${self:custom.stage}}
-    basePath: verification-event
+    basePath: webhook
     stage: ${self:custom.stage}
     createRoute53Record: true
 
@@ -88,7 +88,7 @@ custom:
   # Warmup every 5 minutes
   warmup:
     default:
-      enabled: true
+      enabled: prod
       prewarm: true
       events:
         - schedule: cron(0/5 * ? * MON-SUN *)
@@ -204,6 +204,16 @@ functions:
           batchSize: 1
     timeout: 30
     memorySize: 1600
+  broadcast-event:
+    name: ${self:service}-broadcast-event-${self:custom.stage}-v1
+    handler: aws/functions/sqs/broadcast-event.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [WebhookBroadcastEventQueue, Arn]
+          batchSize: 1
+    timeout: 30
+    memorySize: 1600
   save-webhooks:
     name: ${self:service}-save-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/save-webhooks.handler
@@ -215,7 +225,6 @@ functions:
             parameters:
               paths:
                 alias: true
-                verificationId: true
               querystrings:
                 search: false
           cors:
@@ -223,6 +232,17 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: post
+          path: /v1/tenants/{alias}/webhook/subscriptions
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
   update-webhooks:
     name: ${self:service}-update-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/update-webhooks.handler
@@ -242,6 +262,18 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: put
+          path: /v1/tenants/{alias}/webhook/subscriptions/{subscriptionId}
+          request:
+            parameters:
+              paths:
+                alias: true
+                subscriptionId: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
   delete-webhooks:
     name: ${self:service}-delete-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/delete-webhooks.handler
@@ -261,6 +293,18 @@ functions:
             headers: ${self:custom.allowed-headers}
             allowCredentials: true
           authorizer: ${self:custom.authorizer}
+      - http:
+          method: delete
+          path: /v1/tenants/{alias}/webhook/subscriptions/{subscriptionId}
+          request:
+            parameters:
+              paths:
+                alias: true
+                subscriptionId: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
   list-webhooks:
     name: ${self:service}-list-webhooks-${self:custom.stage}-v1
     handler: aws/functions/http/list-webhooks.handler
@@ -281,14 +325,75 @@ functions:
           authorizer: ${self:custom.authorizer}
       - http:
           method: get
-          path: v1//web/v1/tenants/{alias}/webhook/subscriptions
+          path: v1/tenants/{alias}/webhook/subscriptions
           request:
             parameters:
               paths:
                 alias: true
-                verificationId: true
               querystrings:
                 search: false
+          authorizer:
+            type: aws_iam
+  get-tenant-webhook-types:
+    name: ${self:service}-get-tenant-webhook-types-${self:custom.stage}-v1
+    handler: aws/functions/http/get-tenant-webhook-types.handler
+    events:
+      - http:
+          method: get
+          path: /web/v1/tenants/{alias}/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
+      - http:
+          method: get
+          path: /v1/tenants/{alias}/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          authorizer:
+            type: aws_iam
+  get-webhook-types:
+    name: ${self:service}-get-webhook-types-${self:custom.stage}-v1
+    handler: aws/functions/http/get-webhook-types.handler
+    events:
+      - http:
+          method: get
+          path: /web/v1/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
+          authorizer: ${self:custom.authorizer}
+      - http:
+          method: get
+          path: /v1/webhooks/webhook-types
+          request:
+            parameters:
+              paths:
+                alias: true
+              querystrings:
+                search: false
+          cors:
+            origin: "*"
+            headers: ${self:custom.allowed-headers}
+            allowCredentials: true
           authorizer:
             type: aws_iam
 resources:
@@ -356,6 +461,49 @@ resources:
               Condition:
                 ArnEquals:
                   aws:SourceArn: !GetAtt WebhookSendEventQueueRule.Arn
+    
+    WebhookBroadcastEventQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-webhook-broadcast-event-queue-${self:custom.stage}
+        VisibilityTimeout: 30
+        RedrivePolicy:
+          deadLetterTargetArn: ${self:custom.deadletterQueueArn}
+          maxReceiveCount: 3
+
+    WebhookBroadcastEventQueueRule:
+      Type: AWS::Events::Rule
+      Properties:
+        Description: Webhook Broadcast Event Request Rule
+        Name: webhook-broadcast-event-rule-${self:custom.stage}
+        EventBusName: ${self:custom.eventBusName}
+        EventPattern:
+          detail-type:
+            - Webhook - Broadcast Event
+        State: ENABLED
+        Targets:
+          - Arn:
+              Fn::GetAtt: [WebhookSendEventQueue, Arn]
+            Id:
+              Fn::GetAtt: [WebhookSendEventQueue, QueueName]
+
+    WebhookBroadcastEventSQSPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref WebhookBroadcastEventQueue
+        PolicyDocument:
+          Statement:
+            - Action:
+                - SQS:SendMessage
+              Effect: Allow
+              Resource: !GetAtt WebhookBroadcastEventQueue.Arn
+              Principal:
+                Service:
+                  - events.amazonaws.com
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !GetAtt WebhookBroadcastEventQueueRule.Arn
 
     GatewayResponseDefault4XX:
       Type: "AWS::ApiGateway::GatewayResponse"
