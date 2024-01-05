@@ -380,12 +380,6 @@ functions:
       - http:
           method: get
           path: /web/v1/webhooks/webhook-types
-          request:
-            parameters:
-              paths:
-                alias: true
-              querystrings:
-                search: false
           cors:
             origin: "*"
             headers: ${self:custom.allowed-headers}
@@ -394,12 +388,6 @@ functions:
       - http:
           method: get
           path: /v1/webhooks/webhook-types
-          request:
-            parameters:
-              paths:
-                alias: true
-              querystrings:
-                search: false
           cors:
             origin: "*"
             headers: ${self:custom.allowed-headers}

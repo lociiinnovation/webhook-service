@@ -77,6 +77,7 @@ describe('Get Verification event', () => {
     tenantAlias: "client",
     url: "https://url/test"
   }
+
   beforeAll(async () => {
     process.env.APP = 'truuth';
     process.env.COUNTRY = 'au';
@@ -104,6 +105,29 @@ describe('Get Verification event', () => {
     };
 
     event.body = JSON.stringify(subscription);
+
+    const response = await handler(event, context, null);
+    const body = JSON.parse(response['body']);
+    expect(response['statusCode']).toBe(200);
+    expect(body.subscriptionId).toBeDefined();
+  });
+
+  it('Should Save the specific subscription successfully When authentication type is none', async () => {
+    const event: any = {
+      ...baseEvent,
+      pathParameters: { tenantAlias: 'client' }
+    };
+
+    const subscription1 = {
+      webhookType: WEBHOOK_TYPE.BIOPASS_USER_PROVISIONING,
+      description: "Biopass user integration Test",
+      authenticationType: AUTHENTICATION_TYPE.NONE,
+      tenantAlias: "client",
+      url: "https://url/test"
+    }
+    
+
+    event.body = JSON.stringify(subscription1);
 
     const response = await handler(event, context, null);
     const body = JSON.parse(response['body']);

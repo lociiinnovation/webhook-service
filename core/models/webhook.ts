@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsEnum, ValidateIf } from 'class-validator';
 
 export enum WEBHOOK_TYPE {
   CALLBACK = 'CALLBACK',
@@ -7,7 +7,8 @@ export enum WEBHOOK_TYPE {
 
 export enum AUTHENTICATION_TYPE {
   BASIC = 'BASIC',
-  BEARER = 'BEARER'
+  BEARER = 'BEARER',
+  NONE = 'NONE'
 }
 
 export class WebhookType {
@@ -29,13 +30,14 @@ export class WebhookSubscription {
   @IsOptional()
   description?: string;
 
-  @IsNotEmpty({ message: "url is required"})
+  @IsNotEmpty({ message: "url is required" })
   url: string;
 
   @IsNotEmpty({ message: "authentication type is required" })
   @IsEnum(AUTHENTICATION_TYPE, { message: "authentication type is invalid" })
   authenticationType: AUTHENTICATION_TYPE;
 
+  @ValidateIf(o => o.authenticationType !== AUTHENTICATION_TYPE.NONE)
   @IsNotEmpty({ message: "authToken is required" })
   authToken: string;
 }
