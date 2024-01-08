@@ -39,7 +39,7 @@ export class WebhookSubscription {
 
   @ValidateIf(o => o.authenticationType !== AUTHENTICATION_TYPE.NONE)
   @IsNotEmpty({ message: "authToken is required" })
-  authToken: string;
+  authToken?: string;
 }
 
 export class WebhookEvent {
