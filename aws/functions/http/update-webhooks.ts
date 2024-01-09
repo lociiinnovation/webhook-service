@@ -8,7 +8,11 @@ import { WebhookSubscription } from "../../../core/models/webhook";
 export const handler: APIGatewayProxyHandler = Middleware.wrap(async (event, context) => {
 
     context.callbackWaitsForEmptyEventLoop = false;
-    const ctx = Context.getCurrentValue();
+    const tenantAlias = event.pathParameters.alias;
+
+    if (!Context.hasPlatformAdminPermission() && !Context.hasAdminPermission(tenantAlias)) {
+        throw new Errors.UnauthorizedAccessError();
+    }
 
     const webhook = await Validator.transformAndValidate<WebhookSubscription>(
         WebhookSubscription,
@@ -20,7 +24,7 @@ export const handler: APIGatewayProxyHandler = Middleware.wrap(async (event, con
         throw new Errors.InvalidParametersError(`Subscription id not supplied`);
     }
 
-    const factory = new ServiceFactory(ctx.identity.tenant);
+    const factory = new ServiceFactory(tenantAlias);
     const repository = await factory.createWebhookEventRepository();
     const webhooks = await repository.updateWebhook(subscriptionId, webhook);
 

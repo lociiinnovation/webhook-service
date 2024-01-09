@@ -101,7 +101,7 @@ describe('Get Verification event', () => {
     const events = eventSaved.find(e => e.webhookType === WEBHOOK_TYPE.CALLBACK);
     const event: any = {
       ...baseEvent,
-      pathParameters: { subscriptionId: events.subscriptionId, tenantAlias: 'client' }
+      pathParameters: { subscriptionId: events.subscriptionId, alias: 'client' }
     };
 
     event.body = JSON.stringify(subscription);
@@ -115,7 +115,7 @@ describe('Get Verification event', () => {
   it('Should return invalid subscription id', async () => {
     const event: any = {
       ...baseEvent,
-      pathParameters: { tenantAlias: 'client' }
+      pathParameters: { alias: 'client' }
     };
 
     event.body = JSON.stringify(subscription);
@@ -130,7 +130,7 @@ describe('Get Verification event', () => {
   it('Should return no events found', async () => {
     const event: any = {
       ...baseEvent,
-      pathParameters: { subscriptionId: 'ad712hasdasbdi89b1d89', tenantAlias: 'client' }
+      pathParameters: { subscriptionId: 'ad712hasdasbdi89b1d89', alias: 'client' }
     };
 
     event.body = JSON.stringify(subscription);
@@ -140,6 +140,18 @@ describe('Get Verification event', () => {
     expect(response['statusCode']).toBe(404);
     expect(typeof body.error.name).toBe('string');
     expect(body.error.name).toEqual('NotFoundError');
+  });
+
+  it('Should return unauthorized', async () => {
+    const event: any = {
+      ...baseEvent,
+      pathParameters: { subscriptionId: 'ad712hasdasbdi89b1d89', alias: 'test' }
+    };
+
+    event.body = JSON.stringify(subscription);
+
+    const response = await handler(event, context, null);
+    expect(response['statusCode']).toBe(401);
   });
 
 });
