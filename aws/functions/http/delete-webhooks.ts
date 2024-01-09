@@ -8,7 +8,6 @@ export const handler: APIGatewayProxyHandler = Middleware.wrap(async (event, con
 
     context.callbackWaitsForEmptyEventLoop = false;
     const tenantAlias = event.pathParameters.alias;
-    console.log(`Admin permission of ${tenantAlias}: `, Context.hasAdminPermission(tenantAlias));
     if (!Context.hasPlatformAdminPermission() && !Context.hasAdminPermission(tenantAlias)) {
         throw new Errors.UnauthorizedAccessError();
     }
