@@ -93,7 +93,7 @@ describe('Delete webhook subscription', () => {
     const events = eventSaved.find(e => e.webhookType === WEBHOOK_TYPE.CALLBACK);
     const event: any = {
       ...baseEvent,
-      pathParameters: { subscriptionId: events.subscriptionId, tenantAlias: 'client' }
+      pathParameters: { subscriptionId: events.subscriptionId, alias: 'client' }
     };
 
     const response = await handler(event, context, null);
@@ -103,7 +103,7 @@ describe('Delete webhook subscription', () => {
   it('Should return invalid subscription id', async () => {
     const event: any = {
       ...baseEvent,
-      pathParameters: { tenantAlias: 'client' }
+      pathParameters: { alias: 'client' }
     };
 
     const response = await handler(event, context, null);

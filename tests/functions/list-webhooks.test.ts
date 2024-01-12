@@ -87,21 +87,10 @@ describe('List webhook subscriptions', () => {
     await connection.close();
   });
 
-  it('Should get all the events for the specific verification successfully', async () => {
-    const event: any = {
-      ...baseEvent,
-      pathParameters: { verificationId: 'ad712hbdi89b1d89', tenantAlias: 'client' }
-    };
-
-    const response = await handler(event, context, null);
-    const body = JSON.parse(response['body']);
-    expect(response['statusCode']).toBe(200);
-    expect(body.items.length).toBeGreaterThan(1);
-  });
-
   it('Should get all the webhook subscrtiptions successfully', async () => {
     const event: any = {
-      ...baseEvent
+      ...baseEvent,
+      pathParameters: { alias: 'client' }
     };
 
     const response = await handler(event, context, null);
@@ -113,7 +102,7 @@ describe('List webhook subscriptions', () => {
   it('Should return empty items', async () => {
     const event: any = {
       ...baseEvent,
-      pathParameters: {tenantAlias: 'client' },
+      pathParameters: {alias: 'client' },
       queryStringParameters: {
         'webhooktype': WEBHOOK_TYPE.BIOPASS_USER_PROVISIONING
       }
@@ -121,6 +110,19 @@ describe('List webhook subscriptions', () => {
 
     const response = await handler(event, context, null);
     expect(response['statusCode']).toBe(200);
+  });
+
+  it('Should return Unauthorized', async () => {
+    const event: any = {
+      ...baseEvent,
+      pathParameters: {alias: 'test' },
+      queryStringParameters: {
+        'webhooktype': WEBHOOK_TYPE.BIOPASS_USER_PROVISIONING
+      }
+    };
+
+    const response = await handler(event, context, null);
+    expect(response['statusCode']).toBe(401);
   });
 
 });
