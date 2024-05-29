@@ -207,6 +207,9 @@ functions:
   send-events:
     name: ${self:service}-send-events-${self:custom.stage}-v1
     handler: aws/functions/sqs/send-events.handler
+    reservedConcurrency: 10
+    VisibilityTimeout: 10
+    ReceiveMessageWaitTimeSeconds: 1
     events:
       - sqs:
           arn:
@@ -217,6 +220,9 @@ functions:
   broadcast-event:
     name: ${self:service}-broadcast-event-${self:custom.stage}-v1
     handler: aws/functions/sqs/broadcast-event.handler
+    reservedConcurrency: 10
+    VisibilityTimeout: 10
+    ReceiveMessageWaitTimeSeconds: 1
     events:
       - sqs:
           arn:
