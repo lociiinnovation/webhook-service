@@ -13,7 +13,7 @@
     "@locii/truuth-aws-lib": "^2.3.4",
     "@locii/truuth-db": "^4.1.0",
     "@locii/truuth-lib": "^2.6.1",
-    "@locii/truuth-sdk": "^2.23.2",
+    "@locii/truuth-sdk": "^2.27.29",
     "axios": "^1.5.1",
     "class-validator": "^0.14.0",
     "source-map-support": "^0.5.21"
