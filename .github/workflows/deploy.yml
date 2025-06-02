@@ -1,0 +1,94 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      STAGE:
+        description: 'Stage to deploy'
+        required: false
+        default: 'dev'
+      AWS_DEFAULT_REGION:
+        description: 'AWS Region'
+        required: false
+        default: 'ap-southeast-2'
+      COUNTRY:
+        description: 'Country to deploy'
+        required: false
+        default: 'au'
+    
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install node 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.18.1'
+        registry-url: 'https://registry.npmjs.org'
+    - name: Install serverless
+      run: npm install -g serverless@3.38.0
+    - name: Install dependencies
+      run: npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - name: Setup Input Env Variables
+      id: set_input_env
+      run: |
+        echo "STAGE=${{ inputs.STAGE }}" >> $GITHUB_ENV
+        echo "AWS_DEFAULT_REGION=${{ inputs.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
+        echo "COUNTRY=${{ inputs.COUNTRY }}" >> $GITHUB_ENV
+        if [ -z "${{ inputs.STAGE }}" ]; then
+          echo "STAGE=dev" >> $GITHUB_ENV
+        fi
+        if [ -z "${{ inputs.AWS_DEFAULT_REGION }}" ]; then
+          echo "AWS_DEFAULT_REGION=ap-southeast-2" >> $GITHUB_ENV
+        fi
+        if [ -z "${{ inputs.COUNTRY }}" ]; then
+          echo "COUNTRY=au" >> $GITHUB_ENV
+        fi
+    - name: Setup Env Variables
+      id: set_env
+      run: |
+        if [ "$STAGE" = "dev" ] && [ "$COUNTRY" = "au" ]; then 
+          echo "ACCOUNT_ID=566318860935" >> $GITHUB_ENV
+        elif [ "$STAGE" = test ] && [ "$COUNTRY" = "au" ]; then 
+          echo "ACCOUNT_ID=566318860935" >> $GITHUB_ENV
+        elif [ "$STAGE" = "sb" ] && [ "$COUNTRY" = "au" ]; then 
+          echo "ACCOUNT_ID=271541505793" >> $GITHUB_ENV
+        elif [ "$STAGE" = "prod" ] && [ "$COUNTRY" = "au" ]; then 
+          echo "ACCOUNT_ID=650361931399" >> $GITHUB_ENV
+        elif [ "$STAGE" = "sb" ] && [ "$COUNTRY" = "eu" ]; then 
+          echo "ACCOUNT_ID=632044245236" >> $GITHUB_ENV
+        elif [ "$STAGE" = "prod" ] && [ "$COUNTRY" = "eu" ]; then 
+          echo "ACCOUNT_ID=392682065164" >> $GITHUB_ENV 
+        elif [ "$STAGE" = "prod" ] && [ "$COUNTRY" = "us" ]; then 
+          echo "ACCOUNT_ID=323402401778" >> $GITHUB_ENV 
+        fi
+    - name: Check set env
+      run: |
+        echo "STAGE=${{ env.STAGE }}"
+        echo "AWS_DEFAULT_REGION=${{ env.AWS_DEFAULT_REGION }}"
+        echo "COUNTRY=${{ env.COUNTRY }}"
+        echo "ACCOUNT_ID=${{ env.ACCOUNT_ID }}"
+    - name: Configure AWS credentials
+      id: aws-credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: ${{ env.AWS_DEFAULT_REGION }} 
+        role-to-assume: arn:aws:iam::${{env.ACCOUNT_ID}}:role/TravisCrossAccount
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        output-credentials: true
+        role-skip-session-tagging: true
+    - name: Deploy to AWS
+      id: deploy
+      run: |
+        serverless deploy --stage ${STAGE} --region ${AWS_DEFAULT_REGION} --param="account=${ACCOUNT_ID}"  --param="country=${COUNTRY}"
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
