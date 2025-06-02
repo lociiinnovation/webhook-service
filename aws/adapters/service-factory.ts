@@ -1,11 +1,10 @@
 import { IWebhookSubscriptionRepository } from "../../core/ports/webhook-subscription-repository";
 import { IServiceFactory } from "../../core/ports/service-factory";
 import { WebhookEventsRepository } from "./webhook-repository";
-import { String } from "aws-sdk/clients/cloudsearch";
 import { Messaging } from "@locii/truuth-aws-lib";
 
 export class ServiceFactory implements IServiceFactory {
-    private readonly tenantAlias: String
+    private readonly tenantAlias: string
     constructor(tenantAlias: string) {
         this.tenantAlias = tenantAlias
     }
